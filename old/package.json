@@ -4,8 +4,9 @@
     "description": "",
     "main": "bot.js",
     "dependencies": {
-        "mysql2":"^2.1.0",
-      "puppeteer": "^5.2.1"
+        "express-session": "^1.17.1",
+        "mysql2": "^2.1.0",
+        "puppeteer": "^5.2.1"
     },
     "devDependencies": {},
     "scripts": {
@@ -16,4 +17,4 @@
     },
     "author": "Az3z3l",
     "license": "ISC"
-  }
+}
