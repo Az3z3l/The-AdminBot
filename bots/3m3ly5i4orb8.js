@@ -1,6 +1,8 @@
 const puppeteer = require('puppeteer');
 var queue = require('../redis-controller/queue');
+const queueName = __filename.split(".")[0].split("/").pop();
 
+const challName = "PlayBook"
 
 const thecookie = {
 	domain: "https://webhook.site/47a60543-987b-405b-9841-cbb4294046df",
@@ -18,10 +20,12 @@ async function url_visit (url) {
 
         const browser = await puppeteer.launch();   // add `{ args: ['--no-sandbox'] }` if running as root
         const page = await browser.newPage();  
+       
         // set necessary creds/requirements for the bot to be admin (ie. cookie/session/login with admin account)
         // eg.
         await page.setCookie(thecookie)
         await page.setDefaultNavigationTimeout(10000);  // Timeout duration    // use either this or wait for navigation
+       
         // Goto the URL provided by user
         try{
             var result = await page.goto(url);
@@ -30,6 +34,7 @@ async function url_visit (url) {
         catch(e){
             console.log("timeout exceeded");
         }
+        
         await browser.close();
 
         // end modification
@@ -50,7 +55,7 @@ async function rn(){
 }
 
 function popMe(){
-    queue.pop("3m3ly5i4orb8",sendUrl)
+    queue.pop(queueName,sendUrl)
 }
 
 async function sendUrl(err, url) {
@@ -67,6 +72,6 @@ async function sendUrl(err, url) {
     } 
 }
 
-console.log("Started bot for chall A")
+console.log(`Started bot for chall ${challName} with id ${queueName}`)
 popMe()
 
