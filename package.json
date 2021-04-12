@@ -1,0 +1,30 @@
+{
+  "name": "the-adminbot",
+  "version": "1.0.0",
+  "description": "admin bot to use in CTF",
+  "main": "main.js",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "child_process": "^1.0.2",
+    "cookie-parser": "^1.4.5",
+    "crypto": "^1.0.1",
+    "express": "^4.17.1",
+    "express-session": "^1.17.1",
+    "puppeteer": "^8.0.0",
+    "redis": "^3.1.0",
+    "valid-url": "^1.0.9"
+  },
+  "scripts": {
+    "start": "node main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Az3z3l/The-AdminBot.git"
+  },
+  "author": "Az3z3l",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Az3z3l/The-AdminBot/issues"
+  },
+  "homepage": "https://github.com/Az3z3l/The-AdminBot#readme"
+}

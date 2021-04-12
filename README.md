@@ -1,19 +1,17 @@
 # The-AdminBot
-Admin bot that can be used for CTF-Challenges to automate the process of viewing URL(s)
+A standalone service that can be used in CTFs to automate the process of visiting URLs. 
 
+## Features
+ - A captcha system
+ - All challenges that require a bot could be automated into this
+
+## To do
+ - Run the bots as child process of main.js
+ - After x inactive duration, kill it
+ - When a new request for that bot, spawn it and restart timer
 
 ## Setup
  - Install Chrome and Nodejs(above v12)
  - Install mariadb/mysql to use bot-db.js
  - Install [Forever module](https://www.npmjs.com/package/forever) using `npm install forever -g`
  - Install [Puppeteer module](https://www.npmjs.com/package/puppeteer) and [Mysql2 module](https://www.npmjs.com/package/mysql2) using `npm install` 
-
-## TBD
- - Dockerize it to a container to be easily used with other services
- - Make it a _microservice_ that gets the url with a request and visits it
-
-## Reference-Links
- - https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md
- - https://www.npmjs.com/package/forever
- - https://www.npmjs.com/package/forever
- 

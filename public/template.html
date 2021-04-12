@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            The Bot
+        </title>
+    </head>
+    <body onload="status()">
+        <center><h2>
+            Bot for Playbook Challenge
+        </h2></center>
+        
+        <center>
+            <div id="PutChallenge">
+            
+            </div>
+        </center>
+
+        <script>
+
+            function solveValidity(maxLimit) {
+                return (maxLimit <= (Math.floor(+new Date() / 1000)))
+            }
+
+            async function status(){
+                const response = await fetch("/status", {
+                    method: 'GET', 
+                    credentials:"include",
+                });
+                z = await (response.json());
+                if (z.solved=="undefined" || z.used == "true"){
+                    getChall()
+                } else if(z.solved == "false"){
+                    getChall(z.challenge)
+                } else {
+                    validity = solveValidity(z.validity)
+                    if (validity){
+                        getChall()
+                    } else {
+                        setupURL()
+                    }
+                }
+                console.log(z)
+            }
+
+            async function getChall(hash){
+                if (hash == undefined){
+                    const response = await fetch("/challenge", {
+                        method: 'GET', 
+                        credentials:"include",
+                    });
+                    z = await (response.json());
+                    console.log(z.challenge)
+                    hash=z.challenge
+                }
+                let ele = document.getElementById('PutChallenge');
+                ele.innerHTML = `
+                
+                <h3>Find a value that when done a <code>hashlib.sha256(value.encode('utf-8')).hexdigest()[:5]</code> returns this:</h3> ${hash}
+                <br />
+                <br />
+                <input type="text" placeholder="value" id="hashy"></input>
+                <input type="button" onclick="submitAnswer()" value="submit"></input>
+                `;
+            }
+
+            async function submitAnswer(){
+                x=document.getElementById("hashy").value.trim()
+                console.log(x)
+                send = encodeURIComponent(x)
+                const response = await fetch("/solve", {
+                    method: 'POST', 
+                    credentials:"include",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: `answer=${send}`
+                });
+                z = await (response.json());
+                console.log(z)
+                if (z.status == "Failed"){
+                    alert(z.error)
+                } else {
+                    setupURL()
+                }
+            }
+
+            async function submitURL(){
+                x=document.getElementById("url").value.trim()
+                console.log(x)
+                send = encodeURIComponent(x)
+                const response = await fetch("/visit/3m3ly5i4orb8", {
+                    method: 'POST', 
+                    credentials:"include",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: `url=${send}`
+                });
+                urlRes = await (response.json());
+                console.log(urlRes)
+                
+                if (urlRes.status == "failed"){
+                    alert(urlRes.error)
+                    if (urlRes.error == "validity failed") {
+                        status();
+                    } else {
+                    setupURL()
+                    } 
+                } else {
+                    getChall()
+                }
+            }
+
+
+            function setupURL(){
+                let ele = document.getElementById('PutChallenge');
+                ele.innerHTML = `                
+                <br />
+                <h3>Send URL that you want the admin to visit:</h3> 
+                <br />
+                <input type="url" placeholder="value" id="url"></input>
+                <input type="button" onclick="submitURL()" value="submit"></input>
+                `;
+            }
+        </script>
+    </body>
+</html>
