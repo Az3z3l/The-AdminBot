@@ -1,5 +1,5 @@
 const puppeteer = require('puppeteer');
-var queue = require('../redis-app/queue');
+var queue = require('../redis-controller/queue');
 
 
 const thecookie = {
@@ -14,6 +14,7 @@ const thecookie = {
 async function url_visit (url) {
     var quote;
     return new Promise(async function(resolve, reject) {
+        // start modification
 
         const browser = await puppeteer.launch();   // add `{ args: ['--no-sandbox'] }` if running as root
         const page = await browser.newPage();  
@@ -30,8 +31,9 @@ async function url_visit (url) {
             console.log("timeout exceeded");
         }
         await browser.close();
-        resolve(quote);
 
+        // end modification
+        resolve(quote);
     });
 }
 
@@ -58,7 +60,7 @@ async function sendUrl(err, url) {
     console.log(url)
 
     if (!url) {
-        setTimeout(popMe, 1e3);
+        setTimeout(popMe, 1e3); // if null is returned, wait for a sec before retrying
     } else {
         q = await url_visit(url)
         popMe();

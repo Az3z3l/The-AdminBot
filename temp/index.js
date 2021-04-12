@@ -1,23 +1,28 @@
-//requiring path and fs modules
-const path = require('path');
-const fs = require('fs');
+// var spawn = require('child_process').spawn;
 
-let x=[]
-//joining path of directory 
-//passsing directoryPath and callback function
-fs.readdir("../bots", function (err, files) {
-    //handling error
-    if (err) {
-        return console.log('Unable to scan directory: ' + err);
-    } 
-    //listing all files using forEach
-    files.forEach(function (file) {
-        // Do whatever you want to do with the file
-        console.log(file); 
-        x[x.length] = file.split(".")[0]
-        console.log(x)
-    });
-});
+// var child = spawn('node', ['../b.js']);
+
+// console.log(child.pid)
 
 
-console.log(x)
+// // console.log(child.kill());
+// console.log(child.killed)
+// console.log(child.pid)
+
+
+// var myInt = setInterval(function () {
+//     console.log("500");
+// }, 500);
+
+
+setInterval(function () {
+    console.log("700");
+}, 600);
+
+
+// var dict = {
+//     geek: 1,
+//     for: "2",
+//     geeks: 3.5,
+// };
+console.log("g")
