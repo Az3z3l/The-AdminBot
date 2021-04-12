@@ -14,8 +14,8 @@ var availableBots = {}  // set bot name and last used time
 var runnerSpawn = {}    // set bot name and the spawn control object
 
 // init these
-var allowedHosts = [""] // set allowed hosts to set in access-control-allow-origin
-var maxIdleTime = 600    // max time in seconds that the bot is allowed to rest without usage
+var allowedHosts = [""]     // set allowed hosts to set in access-control-allow-origin
+var maxIdleTime = 1*60*10       // max time in seconds that the bot is allowed to rest without usage
 
 
 var app = express();
@@ -37,7 +37,7 @@ app.use(function(req, res, next) {
 app.get('/challenge', function(req, res){
     // console.log(req.session.hash)
     data = validityChecker(req.session)
-    console.log(data)
+    // console.log(data)
     if (data == false){
         hash = randomString()
         req.session.hash = hasher(hash)
@@ -80,7 +80,7 @@ app.post('/solve', function(req, res){
     check = hasher(captcha)
     if(check === req.session.hash){
         req.session.solved = true
-        req.session.validity = (Math.floor(+new Date() / 1000)+100)
+        req.session.validity = (now()+100)
         res.json({'status':'Success'})
         res.end()
         return
@@ -151,14 +151,14 @@ app.get('/', function(req, res) {
 
 function validityChecker(sess){
     var store = {}
-    console.log(sess.hash)
+    // console.log(sess.hash)
     if (sess.hash != undefined && sess.used != true){
         store.hash = sess.hash
         if (sess.solved != undefined){
             if (sess.solved){
                 store.solved = true
                 store.isHashValid = false
-                if (sess.validity <= (Math.floor(+new Date() / 1000))){
+                if (sess.validity <= (now())){
                     store.isSolveValid = false
                 } else {
                     store.isSolveValid = true
@@ -172,6 +172,12 @@ function validityChecker(sess){
         store = false
     }
     return store
+}
+
+
+// returns current time 
+now = function () {
+    return Math.floor(+new Date() / 1000)
 }
 
 
@@ -212,33 +218,61 @@ function hasher(string) {
 function lastUsedTime(key) {
     if (runnerSpawn[key].killed == true){
         js = botFolder+key+".js"
-        runnerSpawn[key] = spawn('node', [js], stdio [ 'ignore', out, err ]);
+        runnerSpawn[key] = botSpawner(js)
     } 
-    availableBots[key] = Math.floor(+new Date() / 1000)
+    availableBots[key] = now()
 }
 
+
 // starts all the bot for the first time
-function initBots(keys) {
-    for (key in keys){
+function initBots() {
+    for (key in availableBots){
         js = botFolder+key+".js"
-        runnerSpawn[key] = spawn('node', [js], stdio [ 'ignore', out, err ]);
-        availableBots[key] = Math.floor(+new Date() / 1000)
+        runnerSpawn[key] = botSpawner(js)
+        availableBots[key] = now()
+        console.log("started bot: ", key)
     }
 }
 
+
+// Spawn bot and return object
+function botSpawner(bot) {
+    x = spawn('node', [bot], { stdio: 'inherit' })
+    
+    // function(err, stdout, stderr) {
+    //     console.log("out:", stdout);
+    //     console.log("err:", stderr); 
+    // });
+    return x
+}
+
+// crawl the folder that has the bot files and initialize availableBots variable
 fs.readdirSync(botFolder).forEach(file => {
-    console.log(file);
     key = file.split(".")[0]
     availableBots[key]=undefined
 });
 
-setInterval(function () {
-    console.log("status")
-    for (key in availableBots){
-        deadTime = Math.floor(+new Date() / 1000) - availableBots[key]
-    }
-}, 1e3*60);
 
+// check the bots status every 5 minutes and kill them if there has been no activity for more than the maxIdleTime
+setInterval(function () {
+    console.log("bot status:\n")
+    for (key in availableBots){
+        deadTime = now() - availableBots[key]
+        if (runnerSpawn[key].killed) {
+            console.log(`${key} bot has been dead for ${deadTime} seconds`)
+        } else if (deadTime>=maxIdleTime){
+            runnerSpawn[key].kill()
+            console.log(`${key} bot is killed due to inactivity for ${deadTime} seconds`)
+            availableBots[key] = now()
+        } else {
+            console.log(`${key} bot is alive`)
+        }
+    }
+    console.log("\n")
+}, 1e3*60*5);
+
+
+initBots()
 console.log("server starting at port 3000")
 app.listen(3000);
 

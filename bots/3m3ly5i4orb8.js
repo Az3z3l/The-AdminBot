@@ -57,11 +57,11 @@ async function sendUrl(err, url) {
     if (err) {
         throw err;
     }
-    console.log(url)
 
     if (!url) {
         setTimeout(popMe, 1e3); // if null is returned, wait for a sec before retrying
     } else {
+        console.log(url)
         q = await url_visit(url)
         popMe();
     } 
