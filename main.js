@@ -3,7 +3,6 @@ var cookieParser = require('cookie-parser');
 var session = require('express-session');
 var path = require('path');
 var queue = require('./redis-controller/queue');
-var bodyParser = require('body-parser')
 const spawn = require('child_process').spawn;
 const crypto = require('crypto');
 const { URL } = require('url');
@@ -14,13 +13,14 @@ var availableBots = {}  // set bot name and last used time
 var runnerSpawn = {}    // set bot name and the spawn control object
 
 // init these
+const PORT = 3000
 var allowedHosts = [""]     // set allowed hosts to set in access-control-allow-origin
-var maxIdleTime = 1*60*10       // max time in seconds that the bot is allowed to rest without usage
-
+var maxIdleTime = 1*60*10   // max time in seconds that the bot is allowed to rest without usage
+var interval = 1e3*60*5     // interval in seconds after which bots are checked
 
 var app = express();
 app.use(cookieParser());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false }));
 app.use(session({secret: randomString(32), resave: true, saveUninitialized: true}));
 app.use(express.json())
 
@@ -238,11 +238,6 @@ function initBots() {
 // Spawn bot and return object
 function botSpawner(bot) {
     x = spawn('node', [bot], { stdio: 'inherit' })
-    
-    // function(err, stdout, stderr) {
-    //     console.log("out:", stdout);
-    //     console.log("err:", stderr); 
-    // });
     return x
 }
 
@@ -251,11 +246,12 @@ fs.readdirSync(botFolder).forEach(file => {
     key = file.split(".")[0]
     availableBots[key]=undefined
 });
+delete availableBots["template"] 
 
 
 // check the bots status every 5 minutes and kill them if there has been no activity for more than the maxIdleTime
 setInterval(function () {
-    console.log("bot status:\n")
+    console.log("\nbot status:")
     for (key in availableBots){
         deadTime = now() - availableBots[key]
         if (runnerSpawn[key].killed) {
@@ -269,10 +265,10 @@ setInterval(function () {
         }
     }
     console.log("\n")
-}, 1e3*60*5);
+}, interval);
 
 
 initBots()
-console.log("server starting at port 3000")
-app.listen(3000);
+console.log(`server starting at port ${PORT}`)
+app.listen(PORT);
 

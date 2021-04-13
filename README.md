@@ -10,3 +10,13 @@ A standalone service that can be used in CTFs to automate the process of visitin
 
 
 ## Setup
+ - Edit timeouts from main.js
+ - Use the template in bots folder to create your action for bot.
+ - Save the file with preferably with a <random string>.js
+ - Use the template.html file in public directory to add `report to admin` page from your challenge 
+
+
+## Starting
+ - docker build -t adminbot .
+ - docker run adminbot
+ - By default, the bot runs on port 3000

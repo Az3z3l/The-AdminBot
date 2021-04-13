@@ -24,7 +24,7 @@ async function url_visit (url) {
         // set necessary creds/requirements for the bot to be admin (ie. cookie/session/login with admin account)
         // eg.
         await page.setCookie(thecookie)
-        await page.setDefaultNavigationTimeout(10000);  // Timeout duration    // use either this or wait for navigation
+        await page.setDefaultNavigationTimeout(1e3*10);  // Timeout duration in milliseconds    // use either this or wait for navigation
        
         // Goto the URL provided by user
         try{
