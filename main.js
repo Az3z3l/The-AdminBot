@@ -15,24 +15,14 @@ var runnerSpawn = {}    // set bot name and the spawn control object
 
 // init these
 const PORT = 3000
-var allowedHosts = [""]     // set allowed hosts to set in access-control-allow-origin
 var maxIdleTime = 1*60*10   // max time in seconds that the bot is allowed to rest without usage
-var interval = 1e3*60*5     // interval in seconds after which bots are checked
+var interval = 1e3*60*5     // interval in milliseconds after which bots are checked
 
 var app = express();
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
 app.use(session({secret: randomString(32), resave: true, saveUninitialized: true, cookie: { sameSite: 'Lax' }}));
 app.use(express.json())
-
-// app.use(function(req, res, next) {
-//     // if (allowedHosts.includes(req.headers.host)){
-//         res.header("Access-Control-Allow-Origin", req.headers.origin);
-//         res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-//         res.header("Access-Control-Allow-Credentials", "true");
-//     // }
-//     next();
-// });
 
 app.engine('htm', function (filePath, options, callback) { 
     fs.readFile(filePath, function (err, content) {
