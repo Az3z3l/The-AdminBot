@@ -7,6 +7,7 @@ const spawn = require('child_process').spawn;
 const crypto = require('crypto');
 const { URL } = require('url');
 const fs = require('fs');
+
 const botFolder = './bots/';
 
 var availableBots = {}  // set bot name and last used time
@@ -21,18 +22,31 @@ var interval = 1e3*60*5     // interval in seconds after which bots are checked
 var app = express();
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
-app.use(session({secret: randomString(32), resave: true, saveUninitialized: true}));
+app.use(session({secret: randomString(32), resave: true, saveUninitialized: true, cookie: { sameSite: 'Lax' }}));
 app.use(express.json())
 
-app.use(function(req, res, next) {
-    // if (allowedHosts.includes(req.headers.host)){
-        res.header("Access-Control-Allow-Origin", req.headers.host);
-        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-        res.header("Access-Control-Allow-Credentials", "True");
-    // }
-    next();
-});
+// app.use(function(req, res, next) {
+//     // if (allowedHosts.includes(req.headers.host)){
+//         res.header("Access-Control-Allow-Origin", req.headers.origin);
+//         res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+//         res.header("Access-Control-Allow-Credentials", "true");
+//     // }
+//     next();
+// });
 
+app.engine('htm', function (filePath, options, callback) { 
+    fs.readFile(filePath, function (err, content) {
+      if (err) return callback(err)
+      var rendered = content.toString()
+        .replace('#chall#', options.challName)
+        .replace('#q#', options.qName)
+      return callback(null, rendered)
+    })
+  })
+
+app.set('views', './public/') 
+app.set('view engine', 'htm')
+  
 
 app.get('/challenge', function(req, res){
     // console.log(req.session.hash)
@@ -130,8 +144,18 @@ app.post('/visit/:id', function(req, res){
     } 
 })
 
+app.get('/page/:id', function(req, res){
+    key = req.params.id
+    if (!(key in availableBots)){
+        res.render('index')
+    } else {
+    res.render('template', { challName: key.split("_")[0], qName: key })
+    }
+})
+
+
 app.get('/', function(req, res) {
-    res.sendFile(path.join(__dirname + '/public/index.html'));
+    res.sendFile(path.join(__dirname + '/public/index.htm'));
 });
 
 
@@ -248,6 +272,7 @@ fs.readdirSync(botFolder).forEach(file => {
 });
 delete availableBots["template"] 
 
+console.log("available bots:", availableBots)
 
 // check the bots status every 5 minutes and kill them if there has been no activity for more than the maxIdleTime
 setInterval(function () {

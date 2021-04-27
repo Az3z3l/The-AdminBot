@@ -17,6 +17,9 @@ A standalone service that can be used in CTFs to automate the process of visitin
 
 
 ## Starting
- - docker build -t adminbot .
- - docker run adminbot
+ - `docker build -t adminbot .`
+ - `docker run --cap-add=SYS_ADMIN adminbot`
  - By default, the bot runs on port 3000
+
+
+ 

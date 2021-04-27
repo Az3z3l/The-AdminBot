@@ -1,20 +1,19 @@
-FROM debian:stretch-slim
+FROM ubuntu:18.04
 
-RUN apt-get update &&\
-    apt-get install -y --no-install-recommends curl nano sudo procps libfontconfig --no-install-recommends
+RUN apt update && apt install -y nano xvfb curl wget software-properties-common unzip --no-install-recommends
+RUN curl -sL https://deb.nodesource.com/setup_current.x | bash -
+RUN apt install -y nodejs chromium-browser
 
+RUN apt-get install -y --no-install-recommends sudo redis-server
 
-RUN apt-get install -y --no-install-recommends gnupg &&\
-    curl -fsSL https://deb.nodesource.com/setup_current.x | bash - &&\
-    apt-get install -y --no-install-recommends nodejs
+RUN npm --version
 
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
-RUN apt-get install -y --no-install-recommends redis-server
-
-WORKDIR /bot
-
-COPY ./package.json ./
-
+RUN useradd bot
+RUN mkdir -p /home/bot
+WORKDIR /home/bot
+COPY package.json .
 RUN npm install
 
 COPY ./bots/ ./bots/
@@ -22,6 +21,9 @@ COPY ./public ./public
 COPY ./redis-controller ./redis-controller
 COPY ./main.js ./main.js
 
-EXPOSE 3000
+RUN chown bot:bot /home/bot
 
-CMD redis-server --daemonize yes ;npm start
+EXPOSE 3000
+USER bot
+
+CMD redis-server --daemonize yes; sleep 5; npm start;
