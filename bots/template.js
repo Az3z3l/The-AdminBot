@@ -19,30 +19,18 @@ async function url_visit (url) {
     return new Promise(async function(resolve, reject) {
         // start modification
 
-        // const browser = await puppeteer.launch({executablePath: '/usr/bin/chromium-browser'});  // add `{ args: ['--no-sandbox'] }` if running as root
-        
-        const browser = await puppeteer.launch({headless: false});  //, executablePath: 'google-chrome-stable'  // add `{ args: ['--no-sandbox'] }` if running as root
-        
+        const browser = await puppeteer.launch({executablePath: '/home/bot/latest/chrome'});  // add `{ args: ['--no-sandbox'] }` if running as root
         const page = await browser.newPage();  
-       
-        // set necessary creds/requirements for the bot to be admin (ie. cookie/session/login with admin account)
-        // eg.
-        // await page.goto(thecookie.domain)
-        
         await page.setCookie(thecookie)
-
-        // await page.setDefaultNavigationTimeout(1e3*10);  // Timeout duration in milliseconds    // use either this or wait for navigation
-       
-        // Goto the URL provided by user
+        await page.setDefaultNavigationTimeout(1e3*15);  // Timeout duration in milliseconds    // use either this or wait for navigation
         try{
             var result = await page.goto(url);
-            // await page.waitForNavigation(); // wait till the page finishes loading              
+            await page.waitForNavigation(); // wait till the page finishes loading              
         }
         catch(e){
             console.log("timeout exceeded");
-        }
-        
-        // await browser.close();
+        }        
+        await browser.close();
 
         // end modification
         resolve(quote);

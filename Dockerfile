@@ -7,7 +7,7 @@ RUN apt install -y nodejs
 
 RUN apt install -y --no-install-recommends sudo redis-server
 
-# ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 # setup a new user and install modules we need
 RUN useradd bot
