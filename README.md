@@ -22,4 +22,5 @@ A standalone service that can be used in CTFs to automate the process of visitin
  - By default, the bot runs on port 3000
 
 
- 
+ ## Additions required
+ - Single user login system to add/control bots dynamically

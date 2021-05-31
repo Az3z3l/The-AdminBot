@@ -1,7 +1,7 @@
 {
   "name": "the-adminbot",
   "version": "1.0.0",
-  "description": "admin bot to use in CTF",
+  "description": "admin bot to use in CTFs",
   "main": "main.js",
   "dependencies": {
     "child_process": "^1.0.2",
