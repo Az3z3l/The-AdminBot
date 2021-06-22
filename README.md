@@ -16,7 +16,7 @@ A standalone service that can be used in CTFs to automate the process of visitin
  - Use the template.html file in public directory to add `report to admin` page from your challenge 
 
 
-## Starting
+## To Run
  - `docker build -t adminbot .`
  - `docker run --cap-add=SYS_ADMIN adminbot`
  - By default, the bot runs on port 3000
