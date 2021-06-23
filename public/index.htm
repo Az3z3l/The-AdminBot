@@ -74,7 +74,7 @@
 			x=document.getElementById("hashy").value.trim()
 			console.log(x)
 			send = encodeURIComponent(x)
-			const response = await fetch("/solve", {
+			var response = await fetch("/solve", {
 				method: 'POST', 
 				credentials:"include",
 				headers: {

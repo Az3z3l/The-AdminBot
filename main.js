@@ -193,20 +193,27 @@ var isAdmin = function (req, res, next) {
     }
 }
 
+
 app.get('/admin/login', function(req, res){
-    res.sendFile(path.join(__dirname + '/public/adminlogin.htm'));
+    res.sendFile(path.join(__dirname + '/public/admin/login.htm'));
 })
 
 app.post('/admin/login', function(req, res){
     // console.log(req.body)
     if (USERNAME === req.body.username+"" && PASSWORD === req.body.password+""){
         req.session.admin = true
-        // res.redirect("/admin/")
-        res.redirect("/admin/bots")
+        res.redirect("/admin")
     } else {
         res.redirect("/")
     }
 })
+
+app.get('/admin', isAdmin, function(req, res){
+    res.sendFile(path.join(__dirname + '/public/admin/index.htm'));
+})
+
+app.use('/admin/static',isAdmin, express.static(path.join(__dirname, './public/admin/static')))
+
 
 app.get('/admin/bots', isAdmin, function(req, res) {
     res.send(availableBots)
@@ -230,17 +237,30 @@ app.post('/admin/bots/status', isAdmin, function(req, res){
     }
 })
 
-app.get('/admin/bots/upload', isAdmin, function(req, res) {
-    res.sendFile(path.join(__dirname + '/public/adminfileupload.htm'));
+app.post('/admin/bots/delete', isAdmin, function(req, res){
+    id = req.body.id
+    if (id in availableBots){
+        killBot(id)
+        try {
+            fs.unlinkSync(botFolder+availableBots[id]["path"])
+            console.log(`Deleted bot for ${availableBots[id]["name"]}`)
+            delete availableBots[id]
+            res.json({'status':'success'})
+        } catch(err) {
+            res.json({'status':'failed','error':err})
+        }
+    } else {
+        res.json({'status':'failed','error':'bot not found'})
+    }
 })
 
 app.post('/admin/bots/upload',isAdmin, function(req,res){
     upload(req,res,function(err) {  
         if(err) {
-            return res.end("Error uploading file.");  
+            return res.redirect(`/admin?err=${err}`);  
         }
         addBot(req.file.originalname);
-        res.end("File is uploaded successfully!");  
+        return res.redirect(`/admin`);  
     });  
 });  
 //---------- END OF ADMIN ----------//
@@ -343,6 +363,7 @@ async function addBot(file) {
 
     key = randomString(8)
     availableBots[key]=  temp
+    console.log("------Added Bot------")
     console.log(availableBots)
 }
 

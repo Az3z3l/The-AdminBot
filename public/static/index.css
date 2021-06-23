@@ -7,6 +7,8 @@ body {
 	margin: 5% auto 0 auto;
 	width: 90%;
 	max-width: 1125px;
+	background: #eee;
+
 }
 
 h1 {
@@ -128,7 +130,7 @@ input[type="button"] {
 }
 
 input[type="button"]:hover {
-	background: #EEE;
+	background: rgb(218, 218, 218);
 }
   
 input[type="button"]:active {

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Adminbot ka Admin</title>
+		<link href="/admin/static/index.css" rel="stylesheet" type="text/css">
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css" rel="stylesheet">
+
+    </head>
+    <script>
+		bots = {}
+		async function botStatus(id, to){
+			var response = await fetch("/admin/bots/status", {
+				method: 'POST', 
+				credentials:"include",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded",
+				},
+				body: `id=${id}&status=${to}`
+			});
+			z = await (response.json());
+			bots = z
+			console.log(z)
+			if (z.status == "Failed"){
+				alert(z.error)
+			} else {
+				loadTable()
+			}
+		}
+
+		async function botDelete(id){
+			z = window.confirm(`Do you wanna delete bot for ${bots[id]["name"]}`)
+			if (!z){
+				return
+			}
+			var response = await fetch("/admin/bots/delete", {
+				method: 'POST', 
+				credentials:"include",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded",
+				},
+				body: `id=${id}`
+			});
+			z = await (response.json());
+			console.log(z)
+			if (z.status == "Failed"){
+				alert(z.error)
+			} else {
+				loadTable()
+			}
+		}
+
+        async function botList(){
+			const response = await fetch("/admin/bots", {
+				method: 'GET', 
+				credentials:"include",
+			});
+			z = await (response.json());
+			return z
+		}
+
+		async function loadTable(){
+			document.getElementById("oh-my-tableee").innerHTML=`
+		<table id="tabloo" class="rwd-table">
+			<tr>
+				<th>Name</th>
+				<th>Bot Status</th>
+				<th>Change Status</th>
+				<th>Delete Bot</th>
+			</tr>
+		</table>`
+			bots = await botList()
+			console.log(bots)
+			conte = ""
+			for (key in bots){
+				stat = (bots[key]["status"] == "private") ? (bots[key]["status"]) : (bots[key]["status"] + " / " + bots[key]["doa"])
+				chng = (bots[key]["status"] == "private") ? "public" : "private"
+				var table = document.getElementById("tabloo");
+				var row = table.insertRow(1);
+				var cell0 = row.insertCell(0);
+				var cell1 = row.insertCell(1);
+				var cell2 = row.insertCell(2);
+				var cell3 = row.insertCell(3);
+				cell0.innerHTML = bots[key]["name"];
+				cell1.innerHTML = stat;
+				cell2.innerHTML = `<button onclick="botStatus('${key}', '${chng}')">make ${chng}</button>`;
+				cell3.innerHTML = `<button onclick="botDelete('${key}')">Delete bot</button>`;
+
+			}
+		}
+
+    </script>
+    <body onload="loadTable()">
+		<h1>Available Bots</h1>
+		<div id="oh-my-tableee"></div>
+		
+		<br /><hr /><br />
+
+		<h1>Add Bot</h1>
+		<form id="uploadForm" enctype="multipart/form-data" action="/admin/bots/upload" method="post">  
+            <input type="file" name="botjs" /><br/><br/>  
+            <input type="submit" value="Upload file" name="submit"><br/><br/>  
+        </form>  
+    </body>
+</html>
