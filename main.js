@@ -1,22 +1,59 @@
 var express = require('express');
 var cookieParser = require('cookie-parser');
 var session = require('express-session');
-var path = require('path');
-var queue = require('./redis-controller/queue');
 const spawn = require('child_process').spawn;
-const crypto = require('crypto');
 const { URL } = require('url');
+const firstline = require('firstline')
+var path = require('path');
+const crypto = require('crypto');
+var queue = require('./redis-controller/queue');
 const fs = require('fs');
+var multer  = require('multer');
+// app.use(express.static('./public/static'))
+
+
 
 const botFolder = './bots/';
+
+// admin creds
+// const USERNAME = "az3z3l"
+// const PASSWORD = "lordofstarmanofironkluholik"
+
+const USERNAME = ""
+const PASSWORD = ""
 
 var availableBots = {}  // set bot name and last used time
 var runnerSpawn = {}    // set bot name and the spawn control object
 
 // init these
 const PORT = 3000
-var maxIdleTime = 1*60*10   // max time in seconds that the bot is allowed to rest without usage
-var interval = 1e3*60*5     // interval in milliseconds after which bots are checked
+var maxIdleTime = ((1)*60)*10   // max time in seconds that the bot is allowed to rest without usage
+var interval = ((1e3)*60)*5     // interval in seconds after which bots are checked
+
+var storage =   multer.diskStorage({  
+    destination: function (req, file, callback) {
+      callback(null, './bots/');
+      console.log(1)
+      fs.readdir(botFolder, (err, files) => {
+        files.forEach(file => {
+          console.log(file);
+        });
+      });
+      
+    },  
+    filename: function (req, file, callback) {  
+        callback(null, file.originalname);  
+        console.log(2)
+        fs.readdir(botFolder, (err, files) => {
+          files.forEach(file => {
+            console.log(file);
+          });
+        });
+  
+    }  
+  });  
+  var upload = multer({ storage : storage}).single('botjs');  
+  
 
 var app = express();
 app.use(cookieParser());
@@ -24,19 +61,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(session({secret: randomString(32), resave: true, saveUninitialized: true, cookie: { sameSite: 'Lax' }}));
 app.use(express.json())
 
-app.engine('htm', function (filePath, options, callback) { 
-    fs.readFile(filePath, function (err, content) {
-      if (err) return callback(err)
-      var rendered = content.toString()
-        .replace('#chall#', options.challName)
-        .replace('#q#', options.qName)
-      return callback(null, rendered)
-    })
-  })
-
-app.set('views', './public/') 
-app.set('view engine', 'htm')
-  
+//---------- USER ----------// 
 
 app.get('/challenge', function(req, res){
     // console.log(req.session.hash)
@@ -103,11 +128,13 @@ app.get('/status', function(req, res) {
 
 app.post('/visit/:id', function(req, res){
     key = req.params.id
-    if (!(key in availableBots)){
+
+    if (availableBots[key] == undefined || availableBots[key]["status"]=="private"){
         res.json({'status':'failed','error':'invalid challenge id'})
         res.end()
         return 
     }
+    qid = availableBots[key]["qid"]
     data = validityChecker(req.session)
     if (data.solved && data.isSolveValid){
         body = (req.body)
@@ -117,7 +144,7 @@ app.post('/visit/:id', function(req, res){
             req.session.used = true;
 
             // add to ds
-            queue.push(url,req.params.id);
+            queue.push(url,qid);
             lastUsedTime(key);
             res.json({'status':'admin will visit your page'})
             res.end()
@@ -134,26 +161,92 @@ app.post('/visit/:id', function(req, res){
     } 
 })
 
-app.get('/page/:id', function(req, res){
-    key = req.params.id
-    if (!(key in availableBots)){
-        res.render('index')
-    } else {
-    res.render('template', { challName: key.split("_")[0], qName: key })
+app.get("/bots", function(req, res){
+    toSend = {}
+    for (key in availableBots){
+        temp = {}
+        noww = availableBots[key]
+        if (noww["status"] == "public"){
+            temp["name"] = noww["name"]
+            toSend[key] = temp
+        }
     }
+    res.json(toSend)
 })
+
+app.use('/static', express.static(path.join(__dirname, './public/static')))
 
 
 app.get('/', function(req, res) {
     res.sendFile(path.join(__dirname + '/public/index.htm'));
 });
 
+//---------- END OF USER ----------//
 
-//              //
-//  Functions   //
-//              //
+//---------- ADMIN ----------//
 
-// 
+var isAdmin = function (req, res, next) {
+    if (req.session.admin === true) {
+        next()
+    } else {
+        res.redirect("/")
+    }
+}
+
+app.get('/admin/login', function(req, res){
+    res.sendFile(path.join(__dirname + '/public/adminlogin.htm'));
+})
+
+app.post('/admin/login', function(req, res){
+    // console.log(req.body)
+    if (USERNAME === req.body.username+"" && PASSWORD === req.body.password+""){
+        req.session.admin = true
+        // res.redirect("/admin/")
+        res.redirect("/admin/bots")
+    } else {
+        res.redirect("/")
+    }
+})
+
+app.get('/admin/bots', isAdmin, function(req, res) {
+    res.send(availableBots)
+})
+
+app.post('/admin/bots/status', isAdmin, function(req, res){
+    id = req.body.id
+    status = req.body.status
+    if (id in availableBots){
+        if (status == "public"){
+            availableBots[id]["status"] = "public"
+            startBot(id)
+        } else {
+            availableBots[id]["status"] = "private"
+            killBot(id)
+        }
+        res.json({'status':'success'})
+
+    } else {
+        res.json({'status':'failed','error':'bot not found'})
+    }
+})
+
+app.get('/admin/bots/upload', isAdmin, function(req, res) {
+    res.sendFile(path.join(__dirname + '/public/adminfileupload.htm'));
+})
+
+app.post('/admin/bots/upload',isAdmin, function(req,res){
+    upload(req,res,function(err) {  
+        if(err) {
+            return res.end("Error uploading file.");  
+        }
+        addBot(req.file.originalname);
+        res.end("File is uploaded successfully!");  
+    });  
+});  
+//---------- END OF ADMIN ----------//
+
+//---------- FUNCTIONS ----------//
+
 // takes in the session for user
 // returns store
 // if new session -> store returns false
@@ -161,8 +254,6 @@ app.get('/', function(req, res) {
 //      the hash
 //      if the hash was solved
 //      if the solve is still valid
-//
-
 function validityChecker(sess){
     var store = {}
     // console.log(sess.hash)
@@ -190,7 +281,7 @@ function validityChecker(sess){
 
 
 // returns current time 
-now = function () {
+function now () {
     return Math.floor(+new Date() / 1000)
 }
 
@@ -212,10 +303,10 @@ const urlValidity = (s) => {
 
 
 // returns random string
-function randomString(size = 6) {  
+function randomString(size = 7) {  
     return crypto
       .randomBytes(size)
-      .toString('base64')
+      .toString('hex')
       .slice(0, size)
 }
 
@@ -231,23 +322,58 @@ function hasher(string) {
 // gets the key for the bot -> updates last used time -> if the service is down, restarts it  
 function lastUsedTime(key) {
     if (runnerSpawn[key].killed == true){
-        js = botFolder+key+".js"
+        js = botFolder+availableBots[key]["path"]
         runnerSpawn[key] = botSpawner(js)
     } 
-    availableBots[key] = now()
+    availableBots[key]["time"] = now()
 }
 
+async function addBot(file) {
+    js = botFolder+file
+    temp = {}
 
-// starts all the bot for the first time
-function initBots() {
-    for (key in availableBots){
-        js = botFolder+key+".js"
-        runnerSpawn[key] = botSpawner(js)
-        availableBots[key] = now()
-        console.log("started bot: ", key)
+    fl =  await firstline(botFolder+"/"+file)
+    temp["name"] =  fl.substring(fl.indexOf('//')+2).trim()
+
+    temp["path"] = file
+    temp["status"]= "private"
+    temp["time"] = now()
+    temp["doa"] = "dead"
+    temp["qid"] = file.split(".")[0]
+
+    key = randomString(8)
+    availableBots[key]=  temp
+    console.log(availableBots)
+}
+
+// starts the bot
+function startBot(key) {
+    js = botFolder+availableBots[key]["path"]
+    if (runnerSpawn[key] != undefined){
+        if(!runnerSpawn[key].killed){
+            runnerSpawn[key].kill()
+        }
     }
+    runnerSpawn[key] = botSpawner(js)
+    availableBots[key]["time"] = now()
+    availableBots[key]["status"] = "public"
+    availableBots[key]["doa"] = "alive"
+    console.log("started bot for: ", availableBots[key]["name"])
 }
 
+// kills the bot
+function killBot(key) {
+    if (runnerSpawn[key] != undefined){
+        if(!runnerSpawn[key].killed){
+            runnerSpawn[key].kill()
+        }
+    }
+    availableBots[key]["time"] = now()
+    availableBots[key]["status"] = "private"
+    availableBots[key]["doa"] = "dead"
+
+    console.log("killed bot for: ", availableBots[key]["name"])
+}
 
 // Spawn bot and return object
 function botSpawner(bot) {
@@ -255,35 +381,66 @@ function botSpawner(bot) {
     return x
 }
 
-// crawl the folder that has the bot files and initialize availableBots variable
-fs.readdirSync(botFolder).forEach(file => {
-    key = file.split(".")[0]
-    availableBots[key]=undefined
-});
-delete availableBots["template"] 
 
-console.log("available bots:", availableBots)
+// crawl the folder that has the bot files and initialize availableBots variable
+async function ls(path) {
+    dir = await fs.promises.opendir(path)
+    for await (dirent of dir) {
+        file = dirent.name
+
+        if (file == "template.js"){
+            continue
+        }
+
+        temp = {}
+
+        fl =  await firstline(botFolder+"/"+file)
+        temp["name"] =  fl.substring(fl.indexOf('//')+2).trim()
+    
+        temp["path"] = file
+        temp["status"]= "private"
+        temp["time"] = now()
+        temp["doa"] = "dead"
+        temp["qid"] = file.split(".")[0]
+
+        key = randomString(8)
+        availableBots[key]=  temp
+    }
+}
+  
+
+//---------- END OF FUNCTIONS ----------//
+
+
+ls(botFolder).then(() => {console.log(availableBots)})
+  
+
 
 // check the bots status every 5 minutes and kill them if there has been no activity for more than the maxIdleTime
 setInterval(function () {
     console.log("\nbot status:")
     for (key in availableBots){
-        deadTime = now() - availableBots[key]
-        if (runnerSpawn[key].killed) {
-            console.log(`${key} bot has been dead for ${deadTime} seconds`)
+        deadTime = now() - availableBots[key]["time"]
+        challenge = availableBots[key]["name"]
+        if (availableBots[key]["status"] == "private"){
+            console.log(`${challenge} bot has been private for ${deadTime} seconds`)
+        } else if (runnerSpawn[key].killed) {
+            console.log(`${challenge} bot has been dead for ${deadTime} seconds`)
         } else if (deadTime>=maxIdleTime){
             runnerSpawn[key].kill()
-            console.log(`${key} bot is killed due to inactivity for ${deadTime} seconds`)
-            availableBots[key] = now()
+            availableBots[key]["doa"] = "dead"
+            console.log(`${challenge} bot is killed due to inactivity for ${deadTime} seconds`)
+            availableBots[key]["time"] = now()
         } else {
-            console.log(`${key} bot is alive`)
+            console.log(`${challenge} bot is alive`)
         }
     }
     console.log("\n")
 }, interval);
 
 
-initBots()
-console.log(`server starting at port ${PORT}`)
-app.listen(PORT);
+// initBots()
+app.listen(PORT,function(){  
+    console.log(`server starting at port ${PORT}`)
+});  
 

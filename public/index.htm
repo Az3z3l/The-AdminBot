@@ -1,15 +1,163 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>
-            The Bot
-        </title>
-    </head>
-    <body>
-        <center>
-            <h2>
-                
-            </h2>
-        </center>
-    </body>
+<html lang="en">
+	<head>
+		<title>AdminBot</title>
+	    <link href="https://fonts.googleapis.com/css?family=Lora|Ubuntu:300,400" rel="stylesheet" type="text/css">
+		<link href="./static/index.css" rel="stylesheet" type="text/css">
+	</head>
+
+	<script>
+
+		function solveValidity(maxLimit) {
+			return (maxLimit <= (Math.floor(+new Date() / 1000)))
+		}
+
+		async function botList(){
+			const response = await fetch("/bots", {
+				method: 'GET', 
+				credentials:"include",
+			});
+			z = await (response.json());
+			console.log(z)
+			return z
+		}
+
+		bots = {}
+		botList().then((res) => {bots = res})
+
+		async function status(){
+			const response = await fetch("/status", {
+				method: 'GET', 
+				credentials:"include",
+			});
+			z = await (response.json());
+			if (z.solved=="undefined" || z.used == "true"){
+				getChall()
+			} else if(z.solved == "false"){
+				getChall(z.challenge)
+			} else {
+				validity = solveValidity(z.validity)
+				if (validity){
+					getChall()
+				} else {
+					setupURL()
+				}
+			}
+			console.log(z)
+		}
+
+		async function getChall(hash){
+			if (hash == undefined){
+				const response = await fetch("/challenge", {
+					method: 'GET', 
+					credentials:"include",
+				});
+				z = await (response.json());
+				console.log(z.challenge)
+				hash=z.challenge
+			}
+			let ele = document.getElementById('PutChallenge');
+			ele.innerHTML = `
+			<h1>Find a value that when done a <code>hashlib.sha256(value.encode('utf-8')).hexdigest()[:5]</code> 
+				returns: <br /><br />${hash}</h1>
+			<form>
+				<input type="text" name="name" class="question" id="hashy" required="" autocomplete="off">
+				<label for="hashy"><span id="challenge"></span></label>
+				<br><br>
+
+				<input type="button" onclick="submitAnswer()" value="Submit">
+			</form>
+			`;
+		}
+
+		async function submitAnswer(){
+			x=document.getElementById("hashy").value.trim()
+			console.log(x)
+			send = encodeURIComponent(x)
+			const response = await fetch("/solve", {
+				method: 'POST', 
+				credentials:"include",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded",
+				},
+				body: `answer=${send}`
+			});
+			z = await (response.json());
+			console.log(z)
+			if (z.status == "Failed"){
+				alert(z.error)
+			} else {
+				setupURL()
+			}
+		}
+
+		async function submitURL(){
+			x=document.getElementById("url").value.trim()
+			y = document.getElementById("challx").value.trim()
+			console.log(x, y)
+			send = encodeURIComponent(x)
+
+			const response = await fetch(`/visit/${y}`, {
+				method: 'POST', 
+				credentials:"include",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded",
+				},
+				body: `url=${send}`
+			});
+			urlRes = await (response.json());
+			console.log(urlRes)
+			
+			if (urlRes.status == "failed"){
+				alert(urlRes.error)
+				if (urlRes.error == "validity failed") {
+					status();
+				} else {
+				setupURL()
+				} 
+			} else {
+				getChall()
+			}
+		}
+
+
+		function setupURL(){
+			let ele = document.getElementById('PutChallenge');
+			challContent = ""
+			for (key in bots){
+				challContent += `<option value="${key}"><span>${bots[key]["name"]}</span></option>`
+			}
+			ele.innerHTML = `                
+			<br />
+			<h1>Report to Admin:</h1> 
+			<br />
+			<form>
+				<br /></br />
+				<div class="select">
+				<select id="challx" name="challenge">
+					<option selected="" disabled="">Select Challenge</option>
+					${challContent}
+				</select>
+				</div>
+
+				<br><br>
+
+				<input type="url" class="question" id="url" required="">
+				<label for="url"><span>URL</span></label>
+				
+				<br><br>
+
+				<input type="button" onclick="submitURL()" value="submit">
+			</form>
+			`;
+		}
+	</script>
+
+	<body onload="status()">
+		<div id="PutChallenge">
+
+		</div>
+
+		
+	</body>
 </html>
