@@ -32,7 +32,8 @@ COPY ./public ./public
 COPY ./redis-controller ./redis-controller
 COPY ./main.js ./main.js
 
-RUN chown bot:bot /home/bot
+RUN chown -R bot:bot /home/bot
+RUN chmod 755 /home/bot/bots
 
 EXPOSE 3000
 

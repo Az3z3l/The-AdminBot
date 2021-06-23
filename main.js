@@ -33,23 +33,9 @@ var interval = ((1e3)*60)*5     // interval in seconds after which bots are chec
 var storage =   multer.diskStorage({  
     destination: function (req, file, callback) {
       callback(null, './bots/');
-      console.log(1)
-      fs.readdir(botFolder, (err, files) => {
-        files.forEach(file => {
-          console.log(file);
-        });
-      });
-      
     },  
     filename: function (req, file, callback) {  
         callback(null, file.originalname);  
-        console.log(2)
-        fs.readdir(botFolder, (err, files) => {
-          files.forEach(file => {
-            console.log(file);
-          });
-        });
-  
     }  
   });  
   var upload = multer({ storage : storage}).single('botjs');  
@@ -343,6 +329,7 @@ function hasher(string) {
 function lastUsedTime(key) {
     if (runnerSpawn[key].killed == true){
         js = botFolder+availableBots[key]["path"]
+        availableBots[key]["doa"] = "alive"
         runnerSpawn[key] = botSpawner(js)
     } 
     availableBots[key]["time"] = now()
