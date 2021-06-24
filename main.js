@@ -213,6 +213,10 @@ app.get('/admin/logs', isAdmin, function(req, res){
     res.sendFile(path.join(__dirname + '/logs/log.txt'));
 })
 
+app.get('/admin/bots/template', isAdmin, function(req, res){
+    res.sendFile(path.join(__dirname + '/bots/template.js'));
+})
+
 app.get('/admin/bots', isAdmin, function(req, res) {
     res.send(availableBots)
 })
