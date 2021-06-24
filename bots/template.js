@@ -29,7 +29,7 @@ async function url_visit (url) {
             await page.waitForNavigation(); // wait till the page finishes loading              
         }
         catch(e){
-            console.log("timeout exceeded");
+            console.log();
         }        
         await browser.close();
 

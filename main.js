@@ -1,6 +1,7 @@
 var express = require('express');
 var cookieParser = require('cookie-parser');
 var session = require('express-session');
+const morgan = require('morgan');
 const spawn = require('child_process').spawn;
 const { URL } = require('url');
 const firstline = require('firstline')
@@ -9,18 +10,19 @@ const crypto = require('crypto');
 var queue = require('./redis-controller/queue');
 const fs = require('fs');
 var multer  = require('multer');
-// app.use(express.static('./public/static'))
 
+// app.use(express.static('./public/static'))
 
 
 const botFolder = './bots/';
 
 // admin creds
-// const USERNAME = "az3z3l"
-// const PASSWORD = "lordofstarmanofironkluholik"
+const USERNAME = process.env.username || "az3z3l"
+const PASSWORD = process.env.password || randomString(12)
 
-const USERNAME = ""
-const PASSWORD = ""
+console.log(USERNAME,":",PASSWORD)
+// const USERNAME = ""
+// const PASSWORD = ""
 
 var availableBots = {}  // set bot name and last used time
 var runnerSpawn = {}    // set bot name and the spawn control object
@@ -48,6 +50,7 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
 app.use(session({secret: randomString(32), resave: true, saveUninitialized: true, cookie: { sameSite: 'Lax' }}));
 app.use(express.json())
+app.use(morgan('common'));
 
 //---------- USER ----------// 
 
@@ -204,8 +207,11 @@ app.get('/admin', isAdmin, function(req, res){
     res.sendFile(path.join(__dirname + '/public/admin/index.htm'));
 })
 
-app.use('/admin/static',isAdmin, express.static(path.join(__dirname, './public/admin/static')))
+app.use('/admin/static',isAdmin, express.static(path.join(__dirname, '/public/admin/static')))
 
+app.get('/admin/logs', isAdmin, function(req, res){
+    res.sendFile(path.join(__dirname + '/logs/log.txt'));
+})
 
 app.get('/admin/bots', isAdmin, function(req, res) {
     res.send(availableBots)
@@ -442,7 +448,7 @@ ls(botFolder).then(() => {console.log(availableBots)})
 
 // check the bots status every 5 minutes and kill them if there has been no activity for more than the maxIdleTime
 setInterval(function () {
-    console.log("\nbot status:")
+    console.log("\n---------------bot status---------------")
     for (key in availableBots){
         deadTime = now() - availableBots[key]["time"]
         challenge = availableBots[key]["name"]
@@ -459,7 +465,7 @@ setInterval(function () {
             console.log(`${challenge} bot is alive`)
         }
     }
-    console.log("\n")
+    console.log("---------------bot status---------------\n")
 }, interval);
 
 

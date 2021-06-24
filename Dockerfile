@@ -35,6 +35,8 @@ COPY ./main.js ./main.js
 RUN chown -R bot:bot /home/bot
 RUN chmod 755 /home/bot/bots
 
+RUN touch ./logs/log.txt
+
 EXPOSE 3000
 
 

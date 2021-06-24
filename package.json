@@ -10,12 +10,13 @@
     "express": "^4.17.1",
     "express-session": "^1.17.1",
     "firstline": "^2.0.2",
+    "morgan": "^1.10.0",
     "multer": "^1.4.2",
     "puppeteer": "^8.0.0",
     "redis": "^3.1.0"
   },
   "scripts": {
-    "start": "node main.js"
+    "start": "node main.js | tee ./logs/log.txt"
   },
   "repository": {
     "type": "git",
