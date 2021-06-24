@@ -35,6 +35,8 @@ COPY ./main.js ./main.js
 RUN chown -R bot:bot /home/bot
 RUN chmod 755 /home/bot/bots
 
+RUN mkdir ./logs
+RUN chmod 755 /home/bot/logs
 RUN echo '## LoGGer ##' > ./logs/log.txt
 
 EXPOSE 3000
