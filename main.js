@@ -24,6 +24,8 @@ const PASSWORD = ""
 
 var availableBots = {}  // set bot name and last used time
 var runnerSpawn = {}    // set bot name and the spawn control object
+var challengeLevel = 5  // length that needs to be returned by the challenge 
+
 
 // init these
 const PORT = 3000
@@ -63,7 +65,11 @@ app.get('/challenge', function(req, res){
         req.session.hash = hasher(hash)
         req.session.solved=false
         req.session.used = false
-        
+    } else if(req.session.hash.length != challengeLevel) {
+        hash = randomString()
+        req.session.hash = hasher(hash)
+        req.session.solved=false
+        req.session.used = false
     }
     console.log(hash + " : "+req.session.hash)
     res.json({'challenge':req.session.hash})
@@ -107,7 +113,7 @@ app.post('/solve', function(req, res){
 })
 
 app.get('/status', function(req, res) {
-    res.json({'challenge':req.session.hash+'', 'solved':req.session.solved+'', 'validity':req.session.validity+'', "used":req.session.used+''})
+    res.json({'challenge':req.session.hash+'', 'solved':req.session.solved+'', 'validity':req.session.validity+'', "used":req.session.used+'', "level":challengeLevel})
     res.end()
     return
 })
@@ -223,6 +229,16 @@ app.post('/admin/bots/status', isAdmin, function(req, res){
     }
 })
 
+app.post('/admin/challenge/level', isAdmin, function(req, res){
+    level = parseInt(req.body.level, 10)
+    if (!isNaN(level)){
+        challengeLevel = level
+        res.json({'status':'success'})
+    } else {
+        res.json({'status':'failed','error':'not a number'})
+    }
+})
+
 app.post('/admin/bots/delete', isAdmin, function(req, res){
     id = req.body.id
     if (id in availableBots){
@@ -320,7 +336,7 @@ function randomString(size = 7) {
 // returns hash of the string passed
 function hasher(string) {
     demn = crypto.createHash('sha256').update(string).digest('hex'); 
-    x = demn.substr(0,5)
+    x = demn.substr(0,challengeLevel)
     return x
 }
 

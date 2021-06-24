@@ -27,6 +27,26 @@
 			}
 		}
 
+		async function challengeLevel(){
+			lev = document.getElementById("level").value
+			var response = await fetch("/admin/challenge/level", {
+				method: 'POST', 
+				credentials:"include",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded",
+				},
+				body: `level=${lev}`
+			});
+			z = await (response.json());
+			bots = z
+			console.log(z)
+			if (z.status == "Failed"){
+				alert(z.error)
+			} else {
+				loadTable()
+			}
+		}
+
 		async function botDelete(id){
 			z = window.confirm(`Do you wanna delete bot for ${bots[id]["name"]}`)
 			if (!z){
@@ -56,6 +76,17 @@
 			});
 			z = await (response.json());
 			return z
+		}
+
+		async function init(){
+			loadTable();
+			const response = await fetch("/challenge", {
+					method: 'GET', 
+					credentials:"include",
+				});
+			z = await (response.json());
+			hash=z.challenge.length
+			document.getElementById("level").value = hash
 		}
 
 		async function loadTable(){
@@ -89,7 +120,7 @@
 		}
 
     </script>
-    <body onload="loadTable()">
+    <body onload="init()">
 		<h1>Available Bots</h1>
 		<div id="oh-my-tableee"></div>
 		
@@ -99,6 +130,15 @@
 		<form id="uploadForm" enctype="multipart/form-data" action="/admin/bots/upload" method="post">  
             <input type="file" name="botjs" /><br/><br/>  
             <input type="submit" value="Upload file" name="submit"><br/><br/>  
-        </form>  
+        </form>
+
+		<br /><hr /><br />
+
+		<h1>Change Challenge Level</h1>
+		<form id="lev">  
+            <input type="number" id="level" name="level"/><br/><br/>  
+            <input type="button" value="Change level" onclick="challengeLevel()"><br/><br/>  
+        </form>
+
     </body>
 </html>

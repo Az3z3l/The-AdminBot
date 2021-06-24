@@ -33,6 +33,8 @@
 			z = await (response.json());
 			if (z.solved=="undefined" || z.used == "true"){
 				getChall()
+			} else if (z.challenge.length != z.level){
+				getChall()
 			} else if(z.solved == "false"){
 				getChall(z.challenge)
 			} else {
@@ -58,7 +60,7 @@
 			}
 			let ele = document.getElementById('PutChallenge');
 			ele.innerHTML = `
-			<h1>Find a value that when done a <code>hashlib.sha256(value.encode('utf-8')).hexdigest()[:5]</code> 
+			<h1>Find a value that when done a <code>hashlib.sha256(value.encode('utf-8')).hexdigest()[:${hash.length}]</code> 
 				returns: <br /><br />${hash}</h1>
 			<form>
 				<input type="text" name="name" class="question" id="hashy" required="" autocomplete="off">
