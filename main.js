@@ -176,6 +176,9 @@ app.get('/', function(req, res) {
     res.sendFile(path.join(__dirname + '/public/index.htm'));
 });
 
+app.get('/wtf', function(req, res) {
+    res.sendFile(path.join(__dirname + '/public/wtf.htm'));
+});
 //---------- END OF USER ----------//
 
 //---------- ADMIN ----------//
@@ -213,8 +216,12 @@ app.get('/admin/logs', isAdmin, function(req, res){
     res.sendFile(path.join(__dirname + '/logs/log.txt'));
 })
 
-app.get('/admin/bots/template', isAdmin, function(req, res){
+app.get('/admin/bots/template/chrome', isAdmin, function(req, res){
     res.sendFile(path.join(__dirname + '/bots/template.js'));
+})
+
+app.get('/admin/bots/template/firefox', isAdmin, function(req, res){
+    res.sendFile(path.join(__dirname + '/bots/template.py'));
 })
 
 app.get('/admin/bots', isAdmin, function(req, res) {
@@ -376,8 +383,10 @@ async function addBot(file) {
 
     key = randomString(8)
     availableBots[key]=  temp
-    console.log("------Added Bot------")
+    console.log("\n------Added Bot------")
     console.log(availableBots)
+    console.log("------Added Bot------\n")
+
 }
 
 // starts the bot
@@ -411,9 +420,32 @@ function killBot(key) {
 
 // Spawn bot and return object
 function botSpawner(bot) {
-    x = spawn('node', [bot], { stdio: 'inherit' })
-    return x
+    if (bot.endsWith(".js")){
+        x = spawn('node', [bot], { stdio: 'inherit' })
+        return x
+    } else {
+        x = spawn('python3', [bot], { stdio: 'inherit' })
+        return x
+    }
 }
+
+// format time
+function fmtTime(time) {   
+    // Hours, minutes and seconds
+    var hrs = ~~(time / 3600);
+    var mins = ~~((time % 3600) / 60);
+    var secs = ~~time % 60;
+
+    // Output like "1:01" or "4:03:59" or "123:03:59"
+    var ret = "";
+    if (hrs > 0) {
+        ret += "" + hrs + ":" + (mins < 10 ? "0" : "");
+    }
+    ret += "" + mins + ":" + (secs < 10 ? "0" : "");
+    ret += "" + secs;
+    return ret;
+}
+
 
 
 // crawl the folder that has the bot files and initialize availableBots variable
@@ -422,23 +454,17 @@ async function ls(path) {
     for await (dirent of dir) {
         file = dirent.name
 
-        if (file == "template.js"){
+        if (file == "template.js" || file == "template.py"){
             continue
         }
 
-        temp = {}
+        if (file.split(".").length == 0){
+            continue
+        } else if(file.split(".")[1] != "js" && file.split(".")[1] != "py"){
+            continue
+        }
 
-        fl =  await firstline(botFolder+"/"+file)
-        temp["name"] =  fl.substring(fl.indexOf('//')+2).trim()
-    
-        temp["path"] = file
-        temp["status"]= "private"
-        temp["time"] = now()
-        temp["doa"] = "dead"
-        temp["qid"] = file.split(".")[0]
-
-        key = randomString(8)
-        availableBots[key]=  temp
+        await addBot(file)
     }
 }
   
@@ -457,13 +483,13 @@ setInterval(function () {
         deadTime = now() - availableBots[key]["time"]
         challenge = availableBots[key]["name"]
         if (availableBots[key]["status"] == "private"){
-            console.log(`${challenge} bot has been private for ${deadTime} seconds`)
+            console.log(`${challenge} bot has been private for ${fmtTime(deadTime)}`)
         } else if (runnerSpawn[key].killed) {
-            console.log(`${challenge} bot has been dead for ${deadTime} seconds`)
+            console.log(`${challenge} bot has been dead for ${fmtTime(deadTime)}`)
         } else if (deadTime>=maxIdleTime){
             runnerSpawn[key].kill()
             availableBots[key]["doa"] = "dead"
-            console.log(`${challenge} bot is killed due to inactivity for ${deadTime} seconds`)
+            console.log(`${challenge} bot is killed due to inactivity for ${fmtTime(deadTime)}`)
             availableBots[key]["time"] = now()
         } else {
             console.log(`${challenge} bot is alive`)

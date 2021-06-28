@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            What am I looking at?
+        </title>
+        <link href="https://fonts.googleapis.com/css?family=Lora|Ubuntu:300,400" rel="stylesheet" type="text/css">
+		<link href="./static/index.css" rel="stylesheet" type="text/css">
+
+    </head>
+    <body>
+        <h1>What is an AdminBot?</h1>
+        <p>
+            Adminbot is a way to determine <a href="https://en.wikipedia.org/wiki/Proof_of_concept">Proof of Concept</a> for client-side web challenges in a CTF.        </p>
+        
+        <br /><br />
+        
+        <h1>How does this work?</h1>
+        <p>
+            A client-side challenge in a CTF requires you to steal a cookie or data from an endpoint that is accessible only by an authorized user. This bot employs Puppeteer and Selenium to use the challenge as this authorized user. Then visits the URL you send.  
+        </p>
+        
+        <br /><br />
+        
+        <h1>What's with the hashlib stuff?</h1>
+        <p>
+            This service uses hash collision as a Captcha<i>(not exactly a captcha though)</i> to prevent users DoSing the bot. Refer to <a href="https://gist.github.com/Az3z3l/544dc3e597558b0b7861572a1f39977d" target="_blank">this</a> for a crude solve script. 
+        </p>
+
+        <br /><br />
+        
+        <h1>What do I send to the bot?</h1>
+        <p>
+            The bot accepts URLs with HTTP and HTTPS protocol.
+        </p>
+
+        <br /><br />
+        
+        <h1>Am I supposed to pwn this website?</h1>
+        <p>
+            Heck No!! But if you do find some vulns in this service, please report it to the CTF orgs.
+        </p>
+
+        <br /></br />
+
+        <h1>Do I HAVE to use this UI?</h1>
+        <p>
+            No. You can easily use the APIs to communicate with the bot. 
+        </p>
+
+        <br /></br />
+
+    </body>
+</html>
+
+

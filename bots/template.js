@@ -1,4 +1,4 @@
-// Challenge Name Goes Here
+// Challenge Name Goes Here # TEMPLATE FOR CHROME
 const puppeteer = require('puppeteer');
 var queue = require('../redis-controller/queue');
 const queueName = __filename.split(".")[0].split("/").pop();
