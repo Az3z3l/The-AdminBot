@@ -472,7 +472,7 @@ async function ls(path) {
 //---------- END OF FUNCTIONS ----------//
 
 
-ls(botFolder).then(() => {console.log(availableBots)})
+// ls(botFolder).then(() => {console.log(availableBots)})
   
 
 

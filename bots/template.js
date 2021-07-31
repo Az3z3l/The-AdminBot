@@ -3,12 +3,12 @@ const puppeteer = require('puppeteer');
 var queue = require('../redis-controller/queue');
 const queueName = __filename.split(".")[0].split("/").pop();
 
-const challName = "PlayBook"
+const challName = "bot"
 
 const thecookie = {
     "name": 'xoxo',
     "value": "xoxo",
-    "domain": '172.17.0.2:3000',
+    "domain": 'localhost',
     "httpOnly": true,
     "sameSite": 'Lax',
   }
@@ -20,7 +20,7 @@ async function url_visit (url) {
     return new Promise(async function(resolve, reject) {
         // start modification
 
-        const browser = await puppeteer.launch({executablePath: '/home/bot/latest/chrome'});  // add `{ args: ['--no-sandbox'] }` if running as root
+        const browser = await puppeteer.launch({executablePath: '/home/bot/latest/chrome'}); 
         const page = await browser.newPage();  
         await page.setCookie(thecookie)
         await page.setDefaultNavigationTimeout(1e3*15);  // Timeout duration in milliseconds    // use either this or wait for navigation

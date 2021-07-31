@@ -1,32 +1,33 @@
-# Challenge Name Goes Here // TEMPLATE FOR FIREFOX
+#  Challenge Name Goes Here // TEMPLATE FOR FIREFOX
 import os
 import redis
 import time
 import threading
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver import FirefoxOptions
 
 
 queueName = os.path.basename(__file__).split(".py")[0]
 
-challName = "Template for Firefox"
+challName = "bot"
 
 r = redis.Redis(host='0.0.0.0', port=6379)
 
-host = "http://127.0.0.1:9999"
-flag = "flag{this_is_the_admins_token}"
-cooke = {"name": "fleg", "value": flag}
+host = "http://localhost"
+cookie = {"name": "Token", "value": "1337", "httpOnly": True}
+
+opts = FirefoxOptions()
+opts.add_argument("--headless")
 
 def url_visit(url):
-    print(url)
-    driver = webdriver.Firefox()
+    driver = webdriver.Firefox(firefox_options=opts)
     driver.set_page_load_timeout(10)
     try:
-        # driver.get(f"{host}/api/setcookie?flag={flag}")
         driver.get(host)
-        driver.add_cookie(cooke)
+        driver.add_cookie(cookie)
         driver.get(url)
-        time.sleep(10)  # 10 second timeout ?
+        time.sleep(5)
         driver.quit()
         return True
     except:
@@ -36,20 +37,18 @@ def url_visit(url):
 
 
 def sendUrl():
-    y = 0
     while True:
-        y = y + 1
-        print(y)
         try:
             x = popMe()
+            print(x)
             url_visit(x)
         except:
             time.sleep(1)
             continue
+        
 
 def popMe():
-    return (r.rpop('qid').decode('utf8'))
-
+    return (r.rpop(queueName).decode('utf8'))
 
 
 print(f"Started bot for chall {challName} with id {queueName}")
@@ -64,3 +63,7 @@ time.sleep(1.1)
 t2.start()
 time.sleep(2.3)
 t3.start()
+
+t1.join()
+t2.join()
+t3.join()

@@ -18,4 +18,4 @@ A standalone service that can be used in CTFs to automate the process of visitin
 
 ## To Run
  - `docker build -t adminbot .`
- - `docker run --cap-add=SYS_ADMIN --env username=<> --env password=<> -p 80:3000 adminbot`
+ - `docker run --cap-add=SYS_ADMIN --env username=<> --env password=<> -p 80:3000 -d adminbot`

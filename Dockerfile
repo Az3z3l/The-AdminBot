@@ -2,8 +2,10 @@ FROM ubuntu:18.04
 
 # setup node with other prereq
 RUN apt update && apt install -y --no-install-recommends nano xvfb curl wget software-properties-common unzip 
-RUN curl -sL https://deb.nodesource.com/setup_current.x | bash -
-RUN apt install -y nodejs
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash -
+RUN  apt-get install -y nodejs
+
+
 
 RUN apt install -y --no-install-recommends sudo redis-server
 
@@ -27,12 +29,12 @@ COPY package.json .
 RUN npm install
 
 # install firefox support // comment out the next block of lines if ff is not required
-# RUN apt install -y --no-install-recommends python3 jq python3-pip
-# RUN apt-get -y install firefox
-# COPY ./installers/firefox-latest.sh ./
-# RUN chmod +x ./firefox-latest.sh
-# RUN ./firefox-latest.sh
-# RUN pip3 install selenium redis
+RUN apt install -y --no-install-recommends python3 jq python3-pip
+RUN apt-get -y install firefox
+COPY ./installers/firefox-latest.sh ./
+RUN chmod +x ./firefox-latest.sh
+RUN ./firefox-latest.sh
+RUN pip3 install selenium redis
 
 
 # copy the js files
