@@ -28,13 +28,13 @@ RUN ./chromium-latest.sh
 COPY package.json .
 RUN npm install
 
-# install firefox support // comment out the next block of lines if ff is not required
-RUN apt install -y --no-install-recommends python3 jq python3-pip
-RUN apt-get -y install firefox
-COPY ./installers/firefox-latest.sh ./
-RUN chmod +x ./firefox-latest.sh
-RUN ./firefox-latest.sh
-RUN pip3 install selenium redis
+# # install firefox support // comment out the next block of lines if ff is not required
+# RUN apt install -y --no-install-recommends python3 jq python3-pip
+# RUN apt-get -y install firefox
+# COPY ./installers/firefox-latest.sh ./
+# RUN chmod +x ./firefox-latest.sh
+# RUN ./firefox-latest.sh
+# RUN pip3 install selenium redis
 
 
 # copy the js files
