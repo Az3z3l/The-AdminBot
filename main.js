@@ -176,7 +176,7 @@ app.get('/', function(req, res) {
     res.sendFile(path.join(__dirname + '/public/index.htm'));
 });
 
-app.get('/wtf', function(req, res) {
+app.get('/help', function(req, res) {
     res.sendFile(path.join(__dirname + '/public/wtf.htm'));
 });
 //---------- END OF USER ----------//
