@@ -13,21 +13,45 @@ var multer  = require('multer');
 
 // app.use(express.static('./public/static'))
 
-
 const botFolder = './bots/';
 
-// admin creds
 const USERNAME = process.env.username || "az3z3l"
 const PASSWORD = process.env.password || randomString(12)
-
-console.log(USERNAME,":",PASSWORD)
-// const USERNAME = ""
-// const PASSWORD = ""
-
 var availableBots = {}  // set bot name and last used time
 var runnerSpawn = {}    // set bot name and the spawn control object
-var challengeLevel = 5  // length that needs to be returned by the challenge 
+var challengeLevel = (parseInt(process.env.challengeLevel)==NaN ? parseInt(process.env.challengeLevel) : 5)  // length that needs to be returned by the challenge 
 
+var ratelimitBool = false
+var ratelimitTime = 2 // in seconds
+var ratelimitLimit = 1
+
+rLimit = process.env.ratelimiting + ""
+
+try {
+    if (rLimit.split("/").length === 2){
+        ratelimitBool = true
+        ratelimitLimit = ((parseInt(rLimit.split("/")[0]) === true) ? (parseInt(rLimit.split("/")[0])) : ratelimitLimit) 
+        ratelimitTime = ((parseInt(rLimit.split("/")[1]) === true) ? (parseInt(rLimit.split("/")[1])) : ratelimitTime)
+    }    
+} catch (error) {
+    ratelimitBool = false
+    console.log(`Errored out while setting ratelimiting stuff. Falling back to hash. \nError:\n${error}`)
+}
+
+var emptyMiddleware = function (req, res, next) {
+    next()
+  }
+
+var middleware = emptyMiddleware
+
+mainMiddleware = function (req, res, next) 
+{
+    middleware(req, res, next)
+}
+
+app.use(mainMiddleware)
+
+console.log(USERNAME,":",PASSWORD)
 
 // init these
 const PORT = 3000
@@ -56,6 +80,7 @@ app.use(morgan('common'));
 
 app.get('/challenge', function(req, res){
     // console.log(req.session.hash)
+        
     data = validityChecker(req.session)
     // console.log(data)
     if (data == false){
@@ -66,12 +91,12 @@ app.get('/challenge', function(req, res){
     } else if(!data.isHashValid && !data.isSolveValid && data.isHashValid!=undefined){
         hash = randomString()
         req.session.hash = hasher(hash)
-        req.session.solved=false
+        req.session.solved = false
         req.session.used = false
     } else if(req.session.hash.length != challengeLevel) {
         hash = randomString()
         req.session.hash = hasher(hash)
-        req.session.solved=false
+        req.session.solved = false
         req.session.used = false
     }
     console.log(hash + " : "+req.session.hash)
@@ -116,7 +141,7 @@ app.post('/solve', function(req, res){
 })
 
 app.get('/status', function(req, res) {
-    res.json({'challenge':req.session.hash+'', 'solved':req.session.solved+'', 'validity':req.session.validity+'', "used":req.session.used+'', "level":challengeLevel})
+    res.json({'challenge':req.session.hash+'', 'solved':req.session.solved+'', 'validity':req.session.validity+'', "used":req.session.used+'', "level":challengeLevel, "ratelimiting":ratelimitBool+""})
     res.end()
     return
 })
@@ -131,7 +156,7 @@ app.post('/visit/:id', function(req, res){
     }
     qid = availableBots[key]["qid"]
     data = validityChecker(req.session)
-    if (data.solved && data.isSolveValid){
+    if ((data.solved && data.isSolveValid) || ratelimitBool){
         body = (req.body)
         let url = body.url+''
         if (urlValidity(url)){
@@ -256,6 +281,62 @@ app.post('/admin/challenge/level', isAdmin, function(req, res){
     }
 })
 
+app.post('/admin/challenge/switch', isAdmin, function(req, res){
+    changeTo = req.body.to
+    try {
+        if (to === "ratelimit"){
+            ratelimiter = rateLimit({
+                windowMs: (1000)*ratelimitTime,
+                max: ratelimitLimit,
+                message: `You can send only ${ratelimitLimit} requests in ${ratelimitTime} second limit!`,
+                headers: true,
+            })
+            middleware = ratelimiter
+            ratelimitBool = true
+            res.json({'status':'success'})
+        } else if (to == "hashing"){
+            middleware = emptyMiddleware
+            ratelimitBool = false
+            res.json({'status':'success'})
+        } else {
+            res.json({'status':'failed','error':'not a valid option'})
+        }
+    } catch (error) {
+        res.json({'status':'failed','error':error+""})
+    }
+})
+
+
+app.post('/admin/ratelimit', isAdmin, function(req, res){
+    try {
+        rmTime = parseInt(req.body.time, 10)
+        rmLimit = parseInt(req.body.limit, 10)
+        
+        if (!isNaN(rmTime) || !isNaN(rmLimit)){
+            ratelimitTime = rmTime
+            ratelimitLimit = rmLimit
+
+            if (ratelimitBool === true){
+                ratelimiter = rateLimit({
+                    windowMs: (1000)*ratelimitTime,
+                    max: ratelimitLimit,
+                    message: `You can send only ${ratelimitLimit} requests in ${ratelimitTime} second limit!`,
+                    headers: true,
+                })
+
+                middleware = ratelimiter
+                res.json({'status':'success'})
+            }
+        } else {
+            res.json({'status':'failed','error':"Only Integers are allowed"})            
+        }
+        
+    } catch (error) {
+        res.json({'status':'failed','error':error+""})
+    }
+})
+
+
 app.post('/admin/bots/delete', isAdmin, function(req, res){
     id = req.body.id
     if (id in availableBots){
@@ -284,16 +365,19 @@ app.post('/admin/bots/upload',isAdmin, function(req,res){
 });  
 //---------- END OF ADMIN ----------//
 
-//---------- FUNCTIONS ----------//
 
-// takes in the session for user
-// returns store
-// if new session -> store returns false
-// else store returns ->
-//      the hash
-//      if the hash was solved
-//      if the solve is still valid
-function validityChecker(sess){
+//----------- FUNCTIONS -----------//
+
+/**
+ * takes in the session for user and returns store. 
+ * if (new session) {false}
+ * else {
+ *      the hash,
+ *      if the hash was solved,
+ *      if the solve is still valid.
+ *  }
+ */
+ function validityChecker(sess){
     var store = {}
     // console.log(sess.hash)
     if (sess.hash != undefined && sess.used != true){
@@ -318,14 +402,16 @@ function validityChecker(sess){
     return store
 }
 
-
-// returns current time 
+/**
+ * returns current time
+ */
 function now () {
     return Math.floor(+new Date() / 1000)
 }
 
-
-// returns if url is valid or not
+/**
+ * returns if url is valid or not
+ */
 const urlValidity = (s) => {
     protocols=["http", "https"]
     try {
@@ -340,8 +426,9 @@ const urlValidity = (s) => {
     }
 };
 
-
-// returns random string
+/** 
+ * returns random string
+*/
 function randomString(size = 7) {  
     return crypto
       .randomBytes(size)
@@ -349,16 +436,18 @@ function randomString(size = 7) {
       .slice(0, size)
 }
 
-
-// returns hash of the string passed
+/**
+ * returns hash of the string passed
+*/
 function hasher(string) {
     demn = crypto.createHash('sha256').update(string).digest('hex'); 
     x = demn.substr(0,challengeLevel)
     return x
 }
 
-
-// gets the key for the bot -> updates last used time -> if the service is down, restarts it  
+/**
+ * gets the key for the bot -> updates last used time -> if the service is down, restarts it  
+*/
 function lastUsedTime(key) {
     if (runnerSpawn[key].killed == true){
         js = botFolder+availableBots[key]["path"]
@@ -368,6 +457,9 @@ function lastUsedTime(key) {
     availableBots[key]["time"] = now()
 }
 
+/**
+ * add a new bot
+*/
 async function addBot(file) {
     js = botFolder+file
     temp = {}
@@ -389,7 +481,9 @@ async function addBot(file) {
 
 }
 
-// starts the bot
+/**
+ * starts the bot
+*/
 function startBot(key) {
     js = botFolder+availableBots[key]["path"]
     if (runnerSpawn[key] != undefined){
@@ -404,7 +498,9 @@ function startBot(key) {
     console.log("started bot for: ", availableBots[key]["name"])
 }
 
-// kills the bot
+/**
+ * kills the bot
+*/
 function killBot(key) {
     if (runnerSpawn[key] != undefined){
         if(!runnerSpawn[key].killed){
@@ -418,7 +514,9 @@ function killBot(key) {
     console.log("killed bot for: ", availableBots[key]["name"])
 }
 
-// Spawn bot and return object
+/**
+ * Spawn bot and return object
+*/
 function botSpawner(bot) {
     if (bot.endsWith(".js")){
         x = spawn('node', [bot], { stdio: 'inherit' })
@@ -429,7 +527,9 @@ function botSpawner(bot) {
     }
 }
 
-// format time
+/**
+ * format time
+*/
 function fmtTime(time) {   
     // Hours, minutes and seconds
     var hrs = ~~(time / 3600);
@@ -447,8 +547,9 @@ function fmtTime(time) {
 }
 
 
-
-// crawl the folder that has the bot files and initialize availableBots variable
+/**
+ * crawl the folder that has the bot files and initialize availableBots variable
+*/
 async function ls(path) {
     dir = await fs.promises.opendir(path)
     for await (dirent of dir) {
@@ -467,14 +568,11 @@ async function ls(path) {
         await addBot(file)
     }
 }
-  
 
-//---------- END OF FUNCTIONS ----------//
+//-------- END OF FUNCTIONS --------//
 
 
 // ls(botFolder).then(() => {console.log(availableBots)})
-  
-
 
 // check the bots status every 5 minutes and kill them if there has been no activity for more than the maxIdleTime
 setInterval(function () {
