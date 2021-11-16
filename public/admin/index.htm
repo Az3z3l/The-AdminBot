@@ -4,148 +4,57 @@
         <title>Adminbot ka Admin</title>
 		<link href="/admin/static/index.css" rel="stylesheet" type="text/css">
 		<link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css" rel="stylesheet">
-
     </head>
-    <script>
-		bots = {}
-		async function botStatus(id, to){
-			var response = await fetch("/admin/bots/status", {
-				method: 'POST', 
-				credentials:"include",
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded",
-				},
-				body: `id=${id}&status=${to}`
-			});
-			z = await (response.json());
-			bots = z
-			console.log(z)
-			if (z.status == "Failed"){
-				alert(z.error)
-			} else {
-				loadTable()
-			}
-		}
-
-		async function challengeLevel(){
-			lev = document.getElementById("level").value
-			var response = await fetch("/admin/challenge/level", {
-				method: 'POST', 
-				credentials:"include",
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded",
-				},
-				body: `level=${lev}`
-			});
-			z = await (response.json());
-			bots = z
-			console.log(z)
-			if (z.status == "Failed"){
-				alert(z.error)
-			} else {
-				loadTable()
-			}
-		}
-
-		async function botDelete(id){
-			z = window.confirm(`Do you wanna delete bot for ${bots[id]["name"]}`)
-			if (!z){
-				return
-			}
-			var response = await fetch("/admin/bots/delete", {
-				method: 'POST', 
-				credentials:"include",
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded",
-				},
-				body: `id=${id}`
-			});
-			z = await (response.json());
-			console.log(z)
-			if (z.status == "Failed"){
-				alert(z.error)
-			} else {
-				loadTable()
-			}
-		}
-
-        async function botList(){
-			const response = await fetch("/admin/bots", {
-				method: 'GET', 
-				credentials:"include",
-			});
-			z = await (response.json());
-			return z
-		}
-
-		async function init(){
-			loadTable();
-			const response = await fetch("/challenge", {
-					method: 'GET', 
-					credentials:"include",
-				});
-			z = await (response.json());
-			hash=z.challenge.length
-			document.getElementById("level").value = hash
-		}
-
-		async function loadTable(){
-			document.getElementById("oh-my-tableee").innerHTML=`
-		<table id="tabloo" class="rwd-table">
-			<tr>
-				<th>Name</th>
-				<th>Bot Status</th>
-				<th>Runs</th>
-				<th>Change Status</th>
-				<th>Delete Bot</th>
-			</tr>
-		</table>`
-			bots = await botList()
-			console.log(bots)
-			conte = ""
-			for (key in bots){
-				stat = (bots[key]["status"] == "private") ? (bots[key]["status"]) : (bots[key]["status"] + " / " + bots[key]["doa"])
-				chng = (bots[key]["status"] == "private") ? "public" : "private"
-				runs = (bots[key]["path"].split(".")[1] == "py") ? "Firefox" : "Chrome"
-				var table = document.getElementById("tabloo");
-				var row = table.insertRow(1);
-				var cell0 = row.insertCell(0);
-				var cell1 = row.insertCell(1);
-				var cell2 = row.insertCell(2);
-				var cell3 = row.insertCell(3);
-				var cell4 = row.insertCell(4);
-
-				cell0.innerHTML = bots[key]["name"];
-				cell1.innerHTML = stat;
-				cell2.innerHTML = runs;
-				cell3.innerHTML = `<button onclick="botStatus('${key}', '${chng}')">make ${chng}</button>`;
-				cell4.innerHTML = `<button onclick="botDelete('${key}')">Delete bot</button>`;
-
-			}
-		}
-
-    </script>
+		
+    <script src="/admin/static/index.js"></script>
+		
     <body onload="init()">
 		<h1>Available Bots</h1>
 		<div id="oh-my-tableee"></div>
 		
 		<br /><hr /><br />
 
-		<h1>Add Bot</h1>
-		<form id="uploadForm" enctype="multipart/form-data" action="/admin/bots/upload" method="post">  
-            <input type="file" name="botjs" /><br/><br/>  
-            <input type="submit" value="Upload file" name="submit"><br/><br/>  
-        </form>
-		<a href="/admin/bots/template/chrome" download="bot-template-chrome.js">Template file for Chrome</a><br />
-		<a href="/admin/bots/template/firefox" download="bot-template-firefox.js">Template file for Firefox</a>
+		<div class="row">	
+			<div class="column">
+				<h1>Add Bot</h1>
+				<form id="uploadForm" enctype="multipart/form-data" action="/admin/bots/upload" method="post">  
+					<input type="file" name="botjs" /><br/><br/>  
+					<input type="submit" value="Upload file" name="submit"><br/><br/>  
+				</form>
+				<a href="/admin/bots/template/chrome" download="bot-template-chrome.js">Template file for Chrome</a><br />
+				<a href="/admin/bots/template/firefox" download="bot-template-firefox.js">Template file for Firefox</a>
 
-		<br /><hr /><br />
+				<br /><br />
+			</div>
+			<div class="column">
+				<h1>Challenge</h1>
+				<div id="currChall">
+					Currently using 
+				</div>
+				<br /><br />
+				<input type="button" id="switchto" value="Switch to " onclick="alert('not setup yet')"><br/><br/>
 
-		<!-- <h1>Change Challenge Level</h1>
-		<form id="lev">  
-            <input type="number" id="level" name="level"/><br/><br/>  
-            <input type="button" value="Change level" onclick="challengeLevel()"><br/><br/>  
-        </form> -->
-
+				<br /><br />
+			</div>
+		</div>
+		<hr />
+		<div class="row">
+			<div class="column">
+				<h1>Change Hash Level</h1>
+				<form id="lev">  
+					<input type="number" id="level" name="level"/><br/><br/>  
+					<input type="button" value="Change level" onclick="challengeLevel()"><br/><br/>  
+				</form>
+			</div>
+			<div class="column">
+				<h1>Change Ratelimiting</h1>
+				<form id="rlim">  
+					<input type="number" id="rlimRequests" name="rlimRequests"/> requests in <br/><br/>
+					<input type="number" id="rlimSeconds" name="rlimSeconds"/> seconds <br/><br/>  
+					<input type="button" value="Change limit" onclick="ratelimitLevel()"><br/><br/>  
+				</form>
+			</div>
+		</div>
+		<hr />
     </body>
 </html>

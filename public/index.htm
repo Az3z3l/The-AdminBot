@@ -31,7 +31,9 @@
 				credentials:"include",
 			});
 			z = await (response.json());
-			if (z.solved=="undefined" || z.used == "true"){
+			if (z.ratelimiting == "true"){
+				setupURL()
+			} else if (z.solved=="undefined" || z.used == "true"){
 				getChall()
 			} else if (z.challenge.length != z.level){
 				getChall()
@@ -129,6 +131,9 @@
 			for (key in bots){
 				challContent += `<option value="${key}"><span>${bots[key]["name"]}</span></option>`
 			}
+			if (bots.length != 1){
+				challContent = `<option selected="" disabled="">Select Challenge</option>` + challContent
+			}
 			ele.innerHTML = `                
 			<br />
 			<h1>Report to Admin:</h1> 
@@ -137,7 +142,6 @@
 				<br /></br />
 				<div class="select">
 				<select id="challx" name="challenge">
-					<option selected="" disabled="">Select Challenge</option>
 					${challContent}
 				</select>
 				</div>

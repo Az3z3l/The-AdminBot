@@ -10,6 +10,7 @@ const crypto = require('crypto');
 var queue = require('./redis-controller/queue');
 const fs = require('fs');
 var multer  = require('multer');
+const rateLimit = require("express-rate-limit");
 
 // app.use(express.static('./public/static'))
 
@@ -49,8 +50,6 @@ mainMiddleware = function (req, res, next)
     middleware(req, res, next)
 }
 
-app.use(mainMiddleware)
-
 console.log(USERNAME,":",PASSWORD)
 
 // init these
@@ -75,6 +74,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(session({secret: randomString(32), resave: true, saveUninitialized: true, cookie: { sameSite: 'Lax' }}));
 app.use(express.json())
 app.use(morgan('common'));
+app.use("/visit/",mainMiddleware)
 
 //---------- USER ----------// 
 
@@ -123,7 +123,7 @@ app.post('/solve', function(req, res){
         res.end()
         return
     } else if (data.solved && !data.isSolveValid){
-        res.json({'status':'Failed', 'error':'Validity Exceeded'})
+        res.json({'status':'failed', 'error':'Validity Exceeded'})
         return
     }
     check = hasher(captcha)
@@ -134,7 +134,7 @@ app.post('/solve', function(req, res){
         res.end()
         return
     } else{
-        res.json({'status':'Failed', 'error':'Invalid Captcha'})
+        res.json({'status':'failed', 'error':'Invalid Captcha'})
         res.end()
         return
     }
@@ -271,9 +271,9 @@ app.post('/admin/bots/status', isAdmin, function(req, res){
     }
 })
 
-app.post('/admin/challenge/level', isAdmin, function(req, res){
+app.post('/admin/hash/level', isAdmin, function(req, res){
     level = parseInt(req.body.level, 10)
-    if (!isNaN(level)){
+    if (!isNaN(level) || level<=0){
         challengeLevel = level
         res.json({'status':'success'})
     } else {
@@ -284,7 +284,7 @@ app.post('/admin/challenge/level', isAdmin, function(req, res){
 app.post('/admin/challenge/switch', isAdmin, function(req, res){
     changeTo = req.body.to
     try {
-        if (to === "ratelimit"){
+        if (changeTo === "ratelimit"){
             ratelimiter = rateLimit({
                 windowMs: (1000)*ratelimitTime,
                 max: ratelimitLimit,
@@ -294,7 +294,7 @@ app.post('/admin/challenge/switch', isAdmin, function(req, res){
             middleware = ratelimiter
             ratelimitBool = true
             res.json({'status':'success'})
-        } else if (to == "hashing"){
+        } else if (changeTo == "hash"){
             middleware = emptyMiddleware
             ratelimitBool = false
             res.json({'status':'success'})
@@ -312,7 +312,7 @@ app.post('/admin/ratelimit', isAdmin, function(req, res){
         rmTime = parseInt(req.body.time, 10)
         rmLimit = parseInt(req.body.limit, 10)
         
-        if (!isNaN(rmTime) || !isNaN(rmLimit)){
+        if (!isNaN(rmTime) || !isNaN(rmLimit) || rmTime<=0 || rmLimit<=0){
             ratelimitTime = rmTime
             ratelimitLimit = rmLimit
 
@@ -325,17 +325,25 @@ app.post('/admin/ratelimit', isAdmin, function(req, res){
                 })
 
                 middleware = ratelimiter
-                res.json({'status':'success'})
+                res.json({'status':'success', "ratelimit":`${ratelimitLimit}/${ratelimitTime}`})
             }
         } else {
-            res.json({'status':'failed','error':"Only Integers are allowed"})            
+            res.json({'status':'failed','error':"Only Integers are allowed", "ratelimit":`${ratelimitLimit}/${ratelimitTime}`})            
         }
         
     } catch (error) {
-        res.json({'status':'failed','error':error+""})
+        res.json({'status':'failed','error':error+"", "ratelimit":`${ratelimitLimit}/${ratelimitTime}`})
     }
 })
 
+app.get('/admin/ratelimit', isAdmin, function(req, res){
+    res.json({"ratelimit":`${ratelimitLimit}/${ratelimitTime}`})
+})
+
+app.get('/admin/challenge/current', isAdmin, function(req, res){
+
+    res.json({"currentChallenge":`${ratelimitBool === true ? "ratelimit" : "hash"}`})
+})
 
 app.post('/admin/bots/delete', isAdmin, function(req, res){
     id = req.body.id
@@ -512,6 +520,17 @@ function killBot(key) {
     availableBots[key]["doa"] = "dead"
 
     console.log("killed bot for: ", availableBots[key]["name"])
+}
+/**
+ * starts all the bot for the first time
+ */
+function initBots() {
+    for (key in availableBots){
+        js = botFolder+key+".js"
+        runnerSpawn[key] = botSpawner(js)
+        availableBots[key] = now()
+        console.log("started bot: ", key)
+    }
 }
 
 /**
