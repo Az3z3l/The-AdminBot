@@ -20,7 +20,11 @@ const USERNAME = process.env.username || "az3z3l"
 const PASSWORD = process.env.password || randomString(12)
 var availableBots = {}  // set bot name and last used time
 var runnerSpawn = {}    // set bot name and the spawn control object
-var challengeLevel = (parseInt(process.env.challengeLevel)==NaN ? parseInt(process.env.challengeLevel) : 5)  // length that needs to be returned by the challenge 
+
+var idleTime = (parseInt(process.env.idleTime)) || 10  // length that needs to be returned by the challenge 
+
+
+var challengeLevel = (parseInt(process.env.hashLevel)) || 5  // length that needs to be returned by the challenge 
 
 var ratelimitBool = false
 var ratelimitTime = 2 // in seconds
@@ -28,22 +32,25 @@ var ratelimitLimit = 1
 
 rLimit = process.env.ratelimiting + ""
 
+var emptyMiddleware = function (req, res, next) {
+    next()
+  }
+
+var middleware = emptyMiddleware
+
 try {
     if (rLimit.split("/").length === 2){
         ratelimitBool = true
-        ratelimitLimit = ((parseInt(rLimit.split("/")[0]) === true) ? (parseInt(rLimit.split("/")[0])) : ratelimitLimit) 
-        ratelimitTime = ((parseInt(rLimit.split("/")[1]) === true) ? (parseInt(rLimit.split("/")[1])) : ratelimitTime)
+        ratelimitLimit = (parseInt(rLimit.split("/")[0])) || ratelimitLimit 
+        ratelimitTime = (parseInt(rLimit.split("/")[1])) || ratelimitTime
+        updateRatelimit()
     }    
 } catch (error) {
     ratelimitBool = false
     console.log(`Errored out while setting ratelimiting stuff. Falling back to hash. \nError:\n${error}`)
 }
 
-var emptyMiddleware = function (req, res, next) {
-    next()
-  }
 
-var middleware = emptyMiddleware
 
 mainMiddleware = function (req, res, next) 
 {
@@ -54,7 +61,7 @@ console.log(USERNAME,":",PASSWORD)
 
 // init these
 const PORT = 3000
-var maxIdleTime = ((1)*60)*10   // max time in seconds that the bot is allowed to rest without usage
+var maxIdleTime = ((1)*60)*idleTime   // max time in seconds that the bot is allowed to rest without usage
 var interval = ((1e3)*60)*5     // interval in seconds after which bots are checked
 
 var storage =   multer.diskStorage({  
@@ -285,13 +292,7 @@ app.post('/admin/challenge/switch', isAdmin, function(req, res){
     changeTo = req.body.to
     try {
         if (changeTo === "ratelimit"){
-            ratelimiter = rateLimit({
-                windowMs: (1000)*ratelimitTime,
-                max: ratelimitLimit,
-                message: `You can send only ${ratelimitLimit} requests in ${ratelimitTime} second limit!`,
-                headers: true,
-            })
-            middleware = ratelimiter
+            updateRatelimit()
             ratelimitBool = true
             res.json({'status':'success'})
         } else if (changeTo == "hash"){
@@ -317,14 +318,7 @@ app.post('/admin/ratelimit', isAdmin, function(req, res){
             ratelimitLimit = rmLimit
 
             if (ratelimitBool === true){
-                ratelimiter = rateLimit({
-                    windowMs: (1000)*ratelimitTime,
-                    max: ratelimitLimit,
-                    message: `You can send only ${ratelimitLimit} requests in ${ratelimitTime} second limit!`,
-                    headers: true,
-                })
-
-                middleware = ratelimiter
+                updateRatelimit()
                 res.json({'status':'success', "ratelimit":`${ratelimitLimit}/${ratelimitTime}`})
             }
         } else {
@@ -362,12 +356,19 @@ app.post('/admin/bots/delete', isAdmin, function(req, res){
     }
 })
 
-app.post('/admin/bots/upload',isAdmin, function(req,res){
-    upload(req,res,function(err) {  
+app.post('/admin/bots/upload',isAdmin, async function(req,res){
+    upload(req,res,async function(err) {  
         if(err) {
             return res.redirect(`/admin?err=${err}`);  
         }
-        addBot(req.file.originalname);
+        botKey = await addBot(req.file.originalname);
+        try{
+            if (req.query.start+"" === "true"){
+                startBot(botKey)
+            }
+        } catch {
+            console.log("error while passing")
+        }
         return res.redirect(`/admin`);  
     });  
 });  
@@ -453,6 +454,17 @@ function hasher(string) {
     return x
 }
 
+function updateRatelimit(){
+    ratelimiter = rateLimit({
+        windowMs: (1000)*ratelimitTime,
+        max: ratelimitLimit,
+        message: `{"status":"failed", "error":"Ratelimiting Error: You can send only ${ratelimitLimit} requests in ${ratelimitTime} seconds!"}`,
+        headers: true,
+    })
+
+    middleware = ratelimiter
+}
+
 /**
  * gets the key for the bot -> updates last used time -> if the service is down, restarts it  
 */
@@ -486,6 +498,7 @@ async function addBot(file) {
     console.log("\n------Added Bot------")
     console.log(availableBots)
     console.log("------Added Bot------\n")
+    return key
 
 }
 
