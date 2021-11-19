@@ -42,7 +42,6 @@ COPY ./bots/ ./bots/
 COPY ./public ./public
 COPY ./redis-controller ./redis-controller
 COPY ./main.js ./main.js
-COPY ./functions.js ./functions.js
 
 
 RUN mkdir ./logs
